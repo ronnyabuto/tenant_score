@@ -1,4 +1,4 @@
-import { generateTenantScoreId } from "../encryption"
+import { generateTenantScoreId } from "../encryption-server"
 import type { User, SignUpData, TenantLookupResult } from "./types"
 import { MOCK_USERS, MOCK_VERIFICATION_CODE, createMockUser } from "./mock-data"
 

@@ -1,11 +1,10 @@
-import { encryptData, generateTenantScoreId } from "../encryption"
 import type { User } from "@/lib/auth/types"
 
 export const MOCK_USERS: Record<string, User> = {
   tenant: {
     id: "user_1",
-    nationalId: encryptData("12345678"),
-    tenantScoreId: generateTenantScoreId("12345678"),
+    nationalId: "mock_encrypted_12345678",
+    tenantScoreId: "TS001234567890ABCDEF",
     fullName: "John Doe",
     userType: "tenant",
     idDocumentType: "national_id",
@@ -24,8 +23,8 @@ export const MOCK_USERS: Record<string, User> = {
   },
   admin: {
     id: "admin_1",
-    nationalId: encryptData("87654321"),
-    tenantScoreId: generateTenantScoreId("87654321"),
+    nationalId: "mock_encrypted_87654321",
+    tenantScoreId: "TS00ADMIN789ABCDEF123",
     fullName: "System Administrator",
     userType: "admin",
     idDocumentType: "national_id",
@@ -44,8 +43,8 @@ export const MOCK_USERS: Record<string, User> = {
   },
   landlord: {
     id: "landlord_1",
-    nationalId: encryptData("11223344"),
-    tenantScoreId: generateTenantScoreId("11223344"),
+    nationalId: "mock_encrypted_11223344",
+    tenantScoreId: "TS00LANDLORD123456789",
     fullName: "John Mwangi",
     userType: "landlord",
     idDocumentType: "national_id",
@@ -73,10 +72,11 @@ export function createMockUser(userData: {
   userType: "tenant" | "landlord" | "admin"
   idDocumentType: "national_id" | "passport"
 }): User {
+  const randomId = Math.random().toString(36).substr(2, 9)
   return {
-    id: Math.random().toString(36).substr(2, 9),
-    nationalId: encryptData(userData.nationalId),
-    tenantScoreId: generateTenantScoreId(userData.nationalId),
+    id: randomId,
+    nationalId: `mock_encrypted_${userData.nationalId}`,
+    tenantScoreId: `TS00${randomId.toUpperCase()}`,
     fullName: userData.fullName,
     userType: userData.userType,
     idDocumentType: userData.idDocumentType,

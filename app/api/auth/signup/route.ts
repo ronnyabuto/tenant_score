@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createUser, hashPassword } from "@/lib/auth"
-import { encryptSensitiveData } from "@/lib/encryption"
+import { encryptSensitiveData } from "@/lib/encryption-server"
 
 export async function POST(request: NextRequest) {
   try {
