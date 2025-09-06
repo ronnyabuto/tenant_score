@@ -73,12 +73,12 @@ export function LoginForm() {
   }
 
   return (
-    <div className="space-component">
-      <div className="text-center space-tight">
-        <h2 className="text-title">
+    <div className="ios-space-md">
+      <div className="text-center ios-space-xs">
+        <h2 className="ios-title">
           {step === "phone" ? "Sign In" : "Enter Code"}
         </h2>
-        <p className="text-caption">
+        <p className="ios-caption">
           {step === "phone" 
             ? "Enter your phone number" 
             : `Code sent to ${phoneNumber}`}
@@ -86,49 +86,49 @@ export function LoginForm() {
       </div>
 
       {step === "phone" ? (
-        <form onSubmit={handlePhoneSubmit} className="space-element">
-          <div className="space-tight">
-            <label className="block text-caption font-medium">Phone Number</label>
+        <form onSubmit={handlePhoneSubmit} className="ios-space-sm">
+          <div className="ios-space-xs">
+            <label className="block ios-caption font-medium">Phone Number</label>
             <input
               type="tel"
               placeholder="254712345678"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
-              className="input-field"
+              className="ios-input"
               required
             />
-            <p className="text-micro">Enter your Kenyan phone number starting with 254</p>
+            <p className="ios-micro">Enter your Kenyan phone number starting with 254</p>
           </div>
           
           <button 
             type="submit" 
             disabled={isLoading}
-            className="btn-primary"
+            className="ios-button"
           >
             {isLoading ? "Sending..." : "Send Code"}
           </button>
         </form>
       ) : (
-        <form onSubmit={handleVerifySubmit} className="space-element">
-          <div className="space-tight">
-            <label className="block text-caption font-medium">Verification Code</label>
+        <form onSubmit={handleVerifySubmit} className="ios-space-sm">
+          <div className="ios-space-xs">
+            <label className="block ios-caption font-medium">Verification Code</label>
             <input
               type="text"
               placeholder="1234"
               value={verificationCode}
               onChange={(e) => setVerificationCode(e.target.value)}
               maxLength={4}
-              className="input-field text-center text-xl font-mono tracking-widest"
+              className="ios-input text-center text-xl font-mono tracking-widest"
               required
             />
-            <p className="text-micro text-center">Enter the 4-digit code sent to your phone</p>
+            <p className="ios-micro text-center">Enter the 4-digit code sent to your phone</p>
           </div>
           
-          <div className="space-tight">
+          <div className="ios-space-xs">
             <button 
               type="submit" 
               disabled={isLoading}
-              className="btn-primary"
+              className="ios-button"
             >
               {isLoading ? "Verifying..." : "Verify & Sign In"}
             </button>
@@ -136,7 +136,7 @@ export function LoginForm() {
             <button 
               type="button" 
               onClick={() => setStep("phone")}
-              className="btn-secondary"
+              className="ios-button-secondary"
             >
               Change Phone Number
             </button>

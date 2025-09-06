@@ -41,7 +41,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (phoneNumber: string) => {
     setState((prev) => ({ ...prev, isLoading: true }))
     try {
-      const user = await authService.signIn(phoneNumber)
+      const user = await authService.signIn(phoneNumber, "phone")
+      console.log("Auth Context - Sign in successful:", { user, userType: user?.userType })
       setState({
         user,
         isLoading: false,

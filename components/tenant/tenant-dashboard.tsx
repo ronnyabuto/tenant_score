@@ -1,337 +1,638 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ScoreBreakdownComponent } from "./score-breakdown"
 import { useAuth } from "@/contexts/auth-context"
-import { Download, Calendar, CreditCard, User, Award, TrendingUp } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import {
+  Shield,
+  CreditCard,
+  Home,
+  Wrench,
+  AlertTriangle,
+  Plus,
+  TrendingUp,
+  Calendar,
+  Phone,
+  CheckCircle,
+  Clock,
+  XCircle,
+  Star,
+  Info,
+  Send,
+} from "lucide-react"
 
-// Mock data - replace with actual API calls
+interface PaymentRecord {
+  id: string
+  amount: number
+  dueDate: string
+  paidDate?: string
+  status: "paid" | "pending" | "overdue"
+  method?: string
+  reference?: string
+}
+
+interface MaintenanceRequest {
+  id: string
+  title: string
+  description: string
+  category: "plumbing" | "electrical" | "hvac" | "general"
+  priority: "low" | "medium" | "high"
+  status: "pending" | "assigned" | "in_progress" | "completed"
+  submittedDate: string
+  completedDate?: string
+}
+
+interface ScoreHistory {
+  month: string
+  score: number
+  change: number
+}
+
 const mockTenantData = {
-  score: 750,
-  totalPayments: 12,
-  onTimePayments: 10,
-  latePayments: 2,
-  totalRentPaid: 540000,
-  averageDaysLate: 2.5,
-  currentTenancy: {
-    propertyName: "Sunrise Apartments Unit 2B",
-    location: "Westlands, Nairobi",
-    monthlyRent: 45000,
-    startDate: "2024-01-01",
-    landlordName: "John Mwangi",
+  currentScore: 720,
+  scoreHistory: [
+    { month: "Nov 2024", score: 720, change: +15 },
+    { month: "Oct 2024", score: 705, change: +10 },
+    { month: "Sep 2024", score: 695, change: -5 },
+    { month: "Aug 2024", score: 700, change: +20 },
+    { month: "Jul 2024", score: 680, change: +5 },
+  ] as ScoreHistory[],
+  payments: [
+    {
+      id: "P001",
+      amount: 45000,
+      dueDate: "2024-12-01",
+      paidDate: "2024-11-28",
+      status: "paid",
+      method: "M-Pesa",
+      reference: "RK12345678",
+    },
+    {
+      id: "P002", 
+      amount: 45000,
+      dueDate: "2024-11-01",
+      paidDate: "2024-10-30",
+      status: "paid",
+      method: "M-Pesa",
+      reference: "RK12345679",
+    },
+    {
+      id: "P003",
+      amount: 45000,
+      dueDate: "2025-01-01",
+      status: "pending",
+    },
+  ] as PaymentRecord[],
+  maintenanceRequests: [
+    {
+      id: "M001",
+      title: "Kitchen Sink Leak",
+      description: "The kitchen sink has been leaking for 3 days. Water is dripping constantly.",
+      category: "plumbing",
+      priority: "high",
+      status: "in_progress",
+      submittedDate: "2024-11-05",
+    },
+    {
+      id: "M002",
+      title: "Bedroom Light Fixture",
+      description: "Light in master bedroom is flickering intermittently.",
+      category: "electrical",
+      priority: "medium", 
+      status: "completed",
+      submittedDate: "2024-10-28",
+      completedDate: "2024-11-02",
+    },
+  ] as MaintenanceRequest[],
+  lease: {
+    property: "Kileleshwa Apartments, Unit 3B",
+    landlord: "John Mwangi",
     landlordPhone: "254712345678",
+    monthlyRent: 45000,
+    leaseStart: "2024-01-01",
+    leaseEnd: "2024-12-31",
+    deposit: 90000,
   },
-  recentPayments: [
-    { id: 1, amount: 45000, date: "2024-11-01", dueDate: "2024-11-01", status: "confirmed", daysLate: 0 },
-    { id: 2, amount: 45000, date: "2024-10-03", dueDate: "2024-10-01", status: "confirmed", daysLate: 2 },
-    { id: 3, amount: 45000, date: "2024-09-01", dueDate: "2024-09-01", status: "confirmed", daysLate: 0 },
-    { id: 4, amount: 45000, date: "2024-08-05", dueDate: "2024-08-01", status: "confirmed", daysLate: 4 },
-  ],
 }
 
 export function TenantDashboard() {
   const { user, signOut } = useAuth()
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("overview")
+  const [newMaintenanceRequest, setNewMaintenanceRequest] = useState({
+    title: "",
+    description: "",
+    category: "general" as MaintenanceRequest["category"],
+    priority: "medium" as MaintenanceRequest["priority"],
+  })
+  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false)
+  const [showComplaintForm, setShowComplaintForm] = useState(false)
+  const [complaintText, setComplaintText] = useState("")
 
   const getScoreColor = (score: number) => {
-    if (score >= 800) return "text-green-600"
-    if (score >= 600) return "text-yellow-600"
+    if (score >= 750) return "text-green-600"
+    if (score >= 650) return "text-blue-600" 
+    if (score >= 550) return "text-yellow-600"
     return "text-red-600"
   }
 
   const getScoreLabel = (score: number) => {
-    if (score >= 800) return "Excellent"
-    if (score >= 600) return "Good"
+    if (score >= 750) return "Excellent"
+    if (score >= 650) return "Good"
+    if (score >= 550) return "Fair"
     return "Needs Improvement"
   }
 
-  const handleDownloadCertificate = async () => {
-    try {
-      const response = await fetch(`/api/tenant/certificate/${user?.tenantScoreId}`)
-
-      if (!response.ok) {
-        throw new Error("Failed to generate certificate")
-      }
-
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const element = document.createElement("a")
-      element.href = url
-      element.download = `tenantscore-certificate-${user?.tenantScoreId}.pdf`
-      document.body.appendChild(element)
-      element.click()
-      document.body.removeChild(element)
-      window.URL.revokeObjectURL(url)
-    } catch (error) {
-      console.error("Certificate download failed:", error)
-      // Fallback to text certificate
-      const element = document.createElement("a")
-      const file = new Blob(
-        [
-          `TenantScore Certificate\n\nTenant: ${user?.fullName}\nScore: ${mockTenantData.score}\nGenerated: ${new Date().toLocaleDateString()}`,
-        ],
-        { type: "text/plain" },
-      )
-      element.href = URL.createObjectURL(file)
-      element.download = "tenantscore-certificate.txt"
-      document.body.appendChild(element)
-      element.click()
-      document.body.removeChild(element)
+  const getPaymentStatusColor = (status: PaymentRecord["status"]) => {
+    switch (status) {
+      case "paid": return "bg-green-100 text-green-800"
+      case "pending": return "bg-yellow-100 text-yellow-800"
+      case "overdue": return "bg-red-100 text-red-800"
+      default: return "bg-gray-100 text-gray-800"
     }
   }
 
+  const getMaintenanceStatusColor = (status: MaintenanceRequest["status"]) => {
+    switch (status) {
+      case "completed": return "bg-green-100 text-green-800"
+      case "in_progress": return "bg-blue-100 text-blue-800"
+      case "assigned": return "bg-purple-100 text-purple-800"
+      case "pending": return "bg-yellow-100 text-yellow-800"
+      default: return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const handleSubmitMaintenance = () => {
+    if (!newMaintenanceRequest.title || !newMaintenanceRequest.description) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      })
+      return
+    }
+
+    toast({
+      title: "Maintenance request submitted",
+      description: "Your request has been sent to property management",
+    })
+
+    setNewMaintenanceRequest({
+      title: "",
+      description: "",
+      category: "general",
+      priority: "medium",
+    })
+    setShowMaintenanceForm(false)
+  }
+
+  const handleSubmitComplaint = () => {
+    if (!complaintText.trim()) {
+      toast({
+        title: "Missing information", 
+        description: "Please describe your complaint",
+        variant: "destructive",
+      })
+      return
+    }
+
+    toast({
+      title: "Complaint submitted",
+      description: "Your complaint has been sent to property management",
+    })
+
+    setComplaintText("")
+    setShowComplaintForm(false)
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-green-600">TenantScore</h1>
-              <Badge variant="secondary">{user?.userType}</Badge>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="ios-container safe-area-pt">
+        <div className="ios-space-sm">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="ios-title text-blue-600">Tenant Score</h1>
+              <div className="flex items-center mt-1">
+                <Shield className="h-3 w-3 text-green-500 mr-1" />
+                <span className="ios-caption text-green-600">Verified Account</span>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">Welcome, {user?.fullName}</span>
-              <Button onClick={signOut} variant="outline" size="sm">
-                Sign Out
-              </Button>
-            </div>
+            <button onClick={signOut} className="ios-button-text">
+              Sign Out
+            </button>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="score">Score Details</TabsTrigger>
-            <TabsTrigger value="payments">Payments</TabsTrigger>
-            <TabsTrigger value="tenancy">Tenancy</TabsTrigger>
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-          </TabsList>
+        <div className="ios-card mb-4">
+          <div className="grid grid-cols-4 gap-1">
+            {[
+              { id: "overview", label: "Overview", icon: Home },
+              { id: "payments", label: "Payments", icon: CreditCard },
+              { id: "maintenance", label: "Maintenance", icon: Wrench },
+              { id: "lease", label: "Lease", icon: Info },
+            ].map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`py-3 px-2 rounded-xl text-xs font-medium transition-all flex flex-col items-center space-y-1 ${
+                  activeTab === id
+                    ? "bg-blue-500 text-white shadow-sm"
+                    : "text-gray-600 hover:text-blue-500 hover:bg-blue-50"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
-          <TabsContent value="overview" className="space-y-6">
-            {/* Score Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Award className="h-5 w-5 text-green-600" />
-                  <span>Your TenantScore</span>
-                </CardTitle>
-                <CardDescription>Your rental reputation score based on payment history</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <div className={`text-4xl font-bold ${getScoreColor(mockTenantData.score)}`}>
-                      {mockTenantData.score}
-                    </div>
-                    <div className="text-sm text-gray-600">{getScoreLabel(mockTenantData.score)}</div>
+        {activeTab === "overview" && (
+          <div className="ios-space-sm">
+            <div className="ios-card mb-6">
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-4">
+                  <div className={`text-5xl font-bold ${getScoreColor(mockTenantData.currentScore)}`}>
+                    {mockTenantData.currentScore}
                   </div>
-                  <Button onClick={handleDownloadCertificate} className="bg-green-600 hover:bg-green-700">
-                    <Download className="h-4 w-4 mr-2" />
-                    Download Certificate
-                  </Button>
-                </div>
-                <Progress value={(mockTenantData.score / 1000) * 100} className="mb-4" />
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <div className="font-semibold text-green-600">{mockTenantData.onTimePayments}</div>
-                    <div className="text-gray-600">On-time payments</div>
-                  </div>
-                  <div>
-                    <div className="font-semibold text-red-600">{mockTenantData.latePayments}</div>
-                    <div className="text-gray-600">Late payments</div>
-                  </div>
-                  <div>
-                    <div className="font-semibold">KES {mockTenantData.totalRentPaid.toLocaleString()}</div>
-                    <div className="text-gray-600">Total rent paid</div>
-                  </div>
-                  <div>
-                    <div className="font-semibold">{mockTenantData.averageDaysLate} days</div>
-                    <div className="text-gray-600">Avg. late days</div>
+                  <div className="ml-4">
+                    <TrendingUp className={`h-8 w-8 ${getScoreColor(mockTenantData.currentScore)}`} />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="ios-body font-semibold mb-2">
+                  {getScoreLabel(mockTenantData.currentScore)} Credit Score
+                </div>
+                <div className="flex items-center justify-center text-green-600">
+                  <span className="text-sm font-medium">+15 points this month</span>
+                </div>
+              </div>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Payment Rate</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {Math.round((mockTenantData.onTimePayments / mockTenantData.totalPayments) * 100)}%
-                  </div>
-                  <p className="text-xs text-muted-foreground">On-time payment rate</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Current Rent</CardTitle>
-                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    KES {mockTenantData.currentTenancy.monthlyRent.toLocaleString()}
-                  </div>
-                  <p className="text-xs text-muted-foreground">Monthly rent amount</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Tenancy Duration</CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {Math.floor(
-                      (new Date().getTime() - new Date(mockTenantData.currentTenancy.startDate).getTime()) /
-                        (1000 * 60 * 60 * 24 * 30),
-                    )}{" "}
-                    months
-                  </div>
-                  <p className="text-xs text-muted-foreground">Current tenancy</p>
-                </CardContent>
-              </Card>
+              <div className="mt-6">
+                <div className="flex justify-between text-xs text-gray-500 mb-2">
+                  <span>300</span>
+                  <span>850</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full ${
+                      mockTenantData.currentScore >= 750 ? 'bg-green-500' :
+                      mockTenantData.currentScore >= 650 ? 'bg-blue-500' :
+                      mockTenantData.currentScore >= 550 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{
+                      width: `${((mockTenantData.currentScore - 300) / 550) * 100}%`
+                    }}
+                  />
+                </div>
+              </div>
             </div>
-          </TabsContent>
 
-          <TabsContent value="score" className="space-y-6">
-            <ScoreBreakdownComponent />
-          </TabsContent>
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <button 
+                onClick={() => setActiveTab("payments")}
+                className="ios-card text-left p-4 hover:bg-blue-50 transition-colors"
+              >
+                <CreditCard className="h-6 w-6 text-blue-500 mb-2" />
+                <div className="ios-caption font-medium">Next Payment</div>
+                <div className="ios-body text-blue-600">KES 45,000</div>
+                <div className="ios-micro text-gray-500">Due Jan 1, 2025</div>
+              </button>
+              
+              <button 
+                onClick={() => setShowMaintenanceForm(true)}
+                className="ios-card text-left p-4 hover:bg-orange-50 transition-colors"
+              >
+                <Plus className="h-6 w-6 text-orange-500 mb-2" />
+                <div className="ios-caption font-medium">Report Issue</div>
+                <div className="ios-body text-orange-600">Maintenance</div>
+                <div className="ios-micro text-gray-500">Submit request</div>
+              </button>
+            </div>
 
-          <TabsContent value="payments" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment History</CardTitle>
-                <CardDescription>Your recent rent payment records</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {mockTenantData.recentPayments.map((payment) => (
-                    <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div
-                          className={`w-3 h-3 rounded-full ${payment.daysLate === 0 ? "bg-green-500" : "bg-yellow-500"}`}
-                        />
-                        <div>
-                          <div className="font-medium">KES {payment.amount.toLocaleString()}</div>
-                          <div className="text-sm text-gray-600">
-                            Paid on {new Date(payment.date).toLocaleDateString()}
-                          </div>
-                        </div>
+            <div className="ios-space-xs">
+              <h3 className="ios-title mb-4">Recent Activity</h3>
+              
+              <div className="ios-card mb-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="ios-caption font-medium">Payment Processed</div>
+                    <div className="ios-micro text-gray-500">Nov 28, 2024 • KES 45,000</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ios-card mb-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Wrench className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="ios-caption font-medium">Maintenance In Progress</div>
+                    <div className="ios-micro text-gray-500">Kitchen sink repair</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "payments" && (
+          <div className="ios-space-sm">
+            <h2 className="ios-title mb-4">Payment History</h2>
+            
+            <div className="ios-space-xs">
+              {mockTenantData.payments.map((payment) => (
+                <div key={payment.id} className="ios-card">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        payment.status === 'paid' ? 'bg-green-100' :
+                        payment.status === 'pending' ? 'bg-yellow-100' : 'bg-red-100'
+                      }`}>
+                        {payment.status === 'paid' ? (
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        ) : payment.status === 'pending' ? (
+                          <Clock className="h-5 w-5 text-yellow-600" />
+                        ) : (
+                          <XCircle className="h-5 w-5 text-red-600" />
+                        )}
                       </div>
-                      <div className="text-right">
-                        <Badge variant={payment.daysLate === 0 ? "default" : "secondary"}>
-                          {payment.daysLate === 0 ? "On Time" : `${payment.daysLate} days late`}
-                        </Badge>
-                        <div className="text-sm text-gray-600 mt-1">
+                      <div>
+                        <div className="ios-body font-semibold">KES {payment.amount.toLocaleString()}</div>
+                        <div className="ios-caption text-gray-500">
                           Due: {new Date(payment.dueDate).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(payment.status)}`}>
+                      {payment.status}
+                    </span>
+                  </div>
+                  
+                  {payment.paidDate && (
+                    <div className="ios-space-xs pt-3 border-t border-gray-100">
+                      <div className="ios-micro text-gray-500">
+                        Paid: {new Date(payment.paidDate).toLocaleDateString()}
+                      </div>
+                      {payment.method && (
+                        <div className="ios-micro text-gray-500">
+                          Method: {payment.method} • Ref: {payment.reference}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-          <TabsContent value="tenancy" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Current Tenancy</CardTitle>
-                <CardDescription>Details about your current rental agreement</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Property</label>
-                    <div className="text-lg font-semibold">{mockTenantData.currentTenancy.propertyName}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Location</label>
-                    <div className="text-lg">{mockTenantData.currentTenancy.location}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Monthly Rent</label>
-                    <div className="text-lg font-semibold text-green-600">
-                      KES {mockTenantData.currentTenancy.monthlyRent.toLocaleString()}
+                  {payment.status === 'pending' && (
+                    <div className="mt-4">
+                      <button className="ios-button w-full">
+                        Pay Now
+                      </button>
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Start Date</label>
-                    <div className="text-lg">
-                      {new Date(mockTenantData.currentTenancy.startDate).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Landlord</label>
-                    <div className="text-lg">{mockTenantData.currentTenancy.landlordName}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Landlord Contact</label>
-                    <div className="text-lg">{mockTenantData.currentTenancy.landlordPhone}</div>
-                  </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              ))}
+            </div>
+          </div>
+        )}
 
-          <TabsContent value="profile" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <User className="h-5 w-5" />
-                  <span>Profile Information</span>
-                </CardTitle>
-                <CardDescription>Your account details and verification status</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {activeTab === "maintenance" && (
+          <div className="ios-space-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="ios-title">Maintenance</h2>
+              <button 
+                onClick={() => setShowMaintenanceForm(true)}
+                className="ios-button-secondary py-2 px-4"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                New Request
+              </button>
+            </div>
+
+            {showMaintenanceForm && (
+              <div className="ios-card mb-6">
+                <h3 className="ios-body font-semibold mb-4">Submit Maintenance Request</h3>
+                
+                <div className="ios-space-xs">
+                  <input
+                    type="text"
+                    placeholder="Issue title (e.g., Leaking faucet)"
+                    value={newMaintenanceRequest.title}
+                    onChange={(e) => setNewMaintenanceRequest({
+                      ...newMaintenanceRequest,
+                      title: e.target.value
+                    })}
+                    className="ios-input mb-3"
+                  />
+                  
+                  <textarea
+                    placeholder="Describe the issue in detail..."
+                    value={newMaintenanceRequest.description}
+                    onChange={(e) => setNewMaintenanceRequest({
+                      ...newMaintenanceRequest,
+                      description: e.target.value
+                    })}
+                    className="ios-input mb-3"
+                    rows={4}
+                  />
+                  
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <select
+                      value={newMaintenanceRequest.category}
+                      onChange={(e) => setNewMaintenanceRequest({
+                        ...newMaintenanceRequest,
+                        category: e.target.value as MaintenanceRequest["category"]
+                      })}
+                      className="ios-input"
+                    >
+                      <option value="general">General</option>
+                      <option value="plumbing">Plumbing</option>
+                      <option value="electrical">Electrical</option>
+                      <option value="hvac">HVAC</option>
+                    </select>
+                    
+                    <select
+                      value={newMaintenanceRequest.priority}
+                      onChange={(e) => setNewMaintenanceRequest({
+                        ...newMaintenanceRequest,
+                        priority: e.target.value as MaintenanceRequest["priority"]
+                      })}
+                      className="ios-input"
+                    >
+                      <option value="low">Low Priority</option>
+                      <option value="medium">Medium Priority</option>
+                      <option value="high">High Priority</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <button onClick={handleSubmitMaintenance} className="flex-1 ios-button">
+                      <Send className="h-4 w-4 mr-1" />
+                      Submit Request
+                    </button>
+                    <button 
+                      onClick={() => setShowMaintenanceForm(false)}
+                      className="flex-1 ios-button-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="ios-space-xs">
+              {mockTenantData.maintenanceRequests.map((request) => (
+                <div key={request.id} className="ios-card">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <div className="ios-body font-semibold">{request.title}</div>
+                      <div className="ios-caption text-gray-600 capitalize">
+                        {request.category} • {request.priority} priority
+                      </div>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getMaintenanceStatusColor(request.status)}`}>
+                      {request.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                  
+                  <div className="ios-micro text-gray-600 mb-3">
+                    {request.description}
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>Submitted: {new Date(request.submittedDate).toLocaleDateString()}</span>
+                    {request.completedDate && (
+                      <span>Completed: {new Date(request.completedDate).toLocaleDateString()}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6">
+              <button 
+                onClick={() => setShowComplaintForm(true)}
+                className="w-full ios-card p-4 text-left hover:bg-red-50 transition-colors border border-red-200"
+              >
+                <div className="flex items-center space-x-3">
+                  <AlertTriangle className="h-6 w-6 text-red-500" />
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Full Name</label>
-                    <div className="text-lg">{user?.fullName}</div>
+                    <div className="ios-caption font-medium text-red-700">File a Complaint</div>
+                    <div className="ios-micro text-red-600">Noise, disturbance, or other issues</div>
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            {showComplaintForm && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50">
+                <div className="w-full bg-white rounded-t-2xl p-6 max-h-96 overflow-y-auto">
+                  <h3 className="ios-body font-semibold mb-4">Submit Complaint</h3>
+                  
+                  <textarea
+                    placeholder="Describe your complaint in detail..."
+                    value={complaintText}
+                    onChange={(e) => setComplaintText(e.target.value)}
+                    className="ios-input mb-4"
+                    rows={6}
+                  />
+                  
+                  <div className="flex space-x-2">
+                    <button onClick={handleSubmitComplaint} className="flex-1 ios-button">
+                      Submit Complaint
+                    </button>
+                    <button 
+                      onClick={() => setShowComplaintForm(false)}
+                      className="flex-1 ios-button-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "lease" && (
+          <div className="ios-space-sm">
+            <h2 className="ios-title mb-4">Lease Information</h2>
+            
+            <div className="ios-card mb-6">
+              <div className="ios-space-xs">
+                <div className="flex items-center space-x-3 mb-4">
+                  <Home className="h-6 w-6 text-blue-500" />
+                  <div>
+                    <div className="ios-body font-semibold">{mockTenantData.lease.property}</div>
+                    <div className="ios-caption text-gray-600">Your Current Residence</div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                  <div>
+                    <div className="ios-caption text-gray-500">Monthly Rent</div>
+                    <div className="ios-body font-semibold text-blue-600">
+                      KES {mockTenantData.lease.monthlyRent.toLocaleString()}
+                    </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Phone Number</label>
-                    <div className="text-lg">{user?.phoneNumber}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">ID Number</label>
-                    <div className="text-lg">{user?.idNumber || "Not provided"}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Email</label>
-                    <div className="text-lg">{user?.email || "Not provided"}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Account Type</label>
-                    <div className="text-lg capitalize">{user?.userType}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Verification Status</label>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant={user?.isVerified ? "default" : "secondary"}>
-                        {user?.isVerified ? "Verified" : "Pending"}
-                      </Badge>
+                    <div className="ios-caption text-gray-500">Security Deposit</div>
+                    <div className="ios-body font-semibold">
+                      KES {mockTenantData.lease.deposit.toLocaleString()}
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </div>
+            </div>
+
+            <div className="ios-card mb-6">
+              <h3 className="ios-body font-semibold mb-4">Lease Period</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="ios-caption text-gray-500">Start Date</div>
+                  <div className="ios-body">
+                    {new Date(mockTenantData.lease.leaseStart).toLocaleDateString()}
+                  </div>
+                </div>
+                <div>
+                  <div className="ios-caption text-gray-500">End Date</div>
+                  <div className="ios-body">
+                    {new Date(mockTenantData.lease.leaseEnd).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-4 p-3 bg-yellow-50 rounded-xl">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4 text-yellow-600" />
+                  <div className="ios-micro text-yellow-700">
+                    Lease expires in 2 months. Consider renewal discussion.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="ios-card">
+              <h3 className="ios-body font-semibold mb-4">Landlord Contact</h3>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="ios-body font-medium">{mockTenantData.lease.landlord}</div>
+                  <div className="ios-caption text-gray-600">{mockTenantData.lease.landlordPhone}</div>
+                </div>
+                <a 
+                  href={`tel:${mockTenantData.lease.landlordPhone}`}
+                  className="ios-button-secondary py-2 px-4"
+                >
+                  <Phone className="h-4 w-4 mr-1" />
+                  Call
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

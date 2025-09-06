@@ -41,11 +41,11 @@ const mockAdminData = {
     totalProperties: 423,
     totalPayments: 15678,
     averageScore: 672,
-    activeDisputes: 12,
+    activeIssues: 24,
   },
-  recentDisputes: [
+  recentIssues: [
     {
-      id: "D001",
+      id: "I001",
       type: "Payment Dispute",
       tenant: "Peter Kiprotich",
       landlord: "John Mwangi",
@@ -54,17 +54,55 @@ const mockAdminData = {
       status: "pending",
       createdAt: "2024-11-08",
       priority: "high",
+      category: "dispute",
     },
     {
-      id: "D002",
-      type: "Score Dispute",
+      id: "I002",
+      type: "Maintenance Request",
       tenant: "Grace Achieng",
       landlord: "Mary Wanjiku",
       amount: 0,
-      description: "Tenant disputes late payment marking",
+      description: "Kitchen sink is leaking, needs urgent repair",
       status: "investigating",
       createdAt: "2024-11-07",
+      priority: "high",
+      category: "maintenance",
+    },
+    {
+      id: "I003",
+      type: "Noise Complaint",
+      tenant: "David Mutua",
+      landlord: "Sarah Wanjiru",
+      amount: 0,
+      description: "Neighbors playing loud music past 10 PM daily",
+      status: "pending",
+      createdAt: "2024-11-06",
       priority: "medium",
+      category: "complaint",
+    },
+    {
+      id: "I004",
+      type: "Security Issue",
+      tenant: "Lucy Wanjiku",
+      landlord: "John Mwangi",
+      amount: 0,
+      description: "Main gate lock is broken, security concern",
+      status: "resolved",
+      createdAt: "2024-11-05",
+      priority: "high",
+      category: "maintenance",
+    },
+    {
+      id: "I005",
+      type: "Score Dispute",
+      tenant: "Michael Otieno",
+      landlord: "Rose Njeri",
+      amount: 0,
+      description: "Tenant disputes late payment marking on credit report",
+      status: "investigating",
+      createdAt: "2024-11-04",
+      priority: "medium",
+      category: "dispute",
     },
   ],
   recentUsers: [
@@ -98,11 +136,19 @@ const mockAdminData = {
     },
     {
       id: "L002",
-      action: "Dispute Resolved",
+      action: "Issue Resolved",
       user: "Admin: System Administrator",
-      details: "Payment dispute D003 resolved in favor of tenant",
+      details: "Payment dispute I003 resolved in favor of tenant",
       timestamp: "2024-11-08 13:15:00",
       type: "admin",
+    },
+    {
+      id: "L003",
+      action: "Maintenance Completed",
+      user: "Maintenance Team",
+      details: "Kitchen sink repair completed for Grace Achieng",
+      timestamp: "2024-11-08 11:45:00",
+      type: "system",
     },
   ],
 }
@@ -111,8 +157,8 @@ export function AdminDashboard() {
   const { user, signOut } = useAuth()
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("overview")
-  const [selectedDispute, setSelectedDispute] = useState<any>(null)
-  const [disputeResolution, setDisputeResolution] = useState("")
+  const [selectedIssue, setSelectedIssue] = useState<any>(null)
+  const [issueResolution, setIssueResolution] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [scoreAdjustment, setScoreAdjustment] = useState({
     userId: "",
@@ -120,13 +166,13 @@ export function AdminDashboard() {
     reason: "",
   })
 
-  const handleResolveDispute = (disputeId: string, resolution: "approve" | "reject") => {
+  const handleResolveIssue = (issueId: string, resolution: "approve" | "reject") => {
     toast({
-      title: "Dispute resolved",
-      description: `Dispute ${disputeId} has been ${resolution === "approve" ? "approved" : "rejected"}`,
+      title: "Issue resolved",
+      description: `Issue ${issueId} has been ${resolution === "approve" ? "approved" : "rejected"}`,
     })
-    setSelectedDispute(null)
-    setDisputeResolution("")
+    setSelectedIssue(null)
+    setIssueResolution("")
   }
 
   const handleScoreAdjustment = () => {
@@ -176,445 +222,284 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-green-600">TenantScore Admin</h1>
-              <Badge variant="destructive">
-                <Shield className="h-3 w-3 mr-1" />
-                {user?.userType}
-              </Badge>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="ios-container safe-area-pt">
+        {/* Header */}
+        <div className="ios-space-sm">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="ios-title text-blue-600">Admin Panel</h1>
+              <div className="flex items-center mt-1">
+                <Shield className="h-3 w-3 text-green-500 mr-1" />
+                <span className="ios-caption text-green-600">{user?.userType}</span>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">Welcome, {user?.fullName}</span>
-              <Button onClick={signOut} variant="outline" size="sm">
-                Sign Out
-              </Button>
-            </div>
+            <button onClick={signOut} className="ios-button-text">
+              Sign Out
+            </button>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="disputes">Disputes</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="system">System</TabsTrigger>
-            <TabsTrigger value="tools">Tools</TabsTrigger>
-          </TabsList>
+        {/* Tab Navigation */}
+        <div className="ios-card mb-4">
+          <div className="grid grid-cols-3 gap-2">
+            <button 
+              onClick={() => setActiveTab("overview")}
+              className={`py-3 px-4 rounded-xl text-sm font-medium transition-all ${
+                activeTab === "overview" 
+                  ? "bg-blue-500 text-white shadow-sm" 
+                  : "text-gray-600 hover:text-blue-500 hover:bg-blue-50"
+              }`}
+            >
+              Overview
+            </button>
+            <button 
+              onClick={() => setActiveTab("issues")}
+              className={`py-3 px-4 rounded-xl text-sm font-medium transition-all ${
+                activeTab === "issues" 
+                  ? "bg-blue-500 text-white shadow-sm" 
+                  : "text-gray-600 hover:text-blue-500 hover:bg-blue-50"
+              }`}
+            >
+              Issues
+            </button>
+            <button 
+              onClick={() => setActiveTab("users")}
+              className={`py-3 px-4 rounded-xl text-sm font-medium transition-all ${
+                activeTab === "users" 
+                  ? "bg-blue-500 text-white shadow-sm" 
+                  : "text-gray-600 hover:text-blue-500 hover:bg-blue-50"
+              }`}
+            >
+              Users
+            </button>
+          </div>
+        </div>
 
-          <TabsContent value="overview" className="space-y-6">
-            {/* System Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{mockAdminData.systemStats.totalUsers.toLocaleString()}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {mockAdminData.systemStats.totalTenants} tenants, {mockAdminData.systemStats.totalLandlords}{" "}
-                    landlords
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Properties</CardTitle>
-                  <Building className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{mockAdminData.systemStats.totalProperties.toLocaleString()}</div>
-                  <p className="text-xs text-muted-foreground">Registered properties</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Payments</CardTitle>
-                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{mockAdminData.systemStats.totalPayments.toLocaleString()}</div>
-                  <p className="text-xs text-muted-foreground">Processed payments</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Disputes</CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-red-600">{mockAdminData.systemStats.activeDisputes}</div>
-                  <p className="text-xs text-muted-foreground">Requiring attention</p>
-                </CardContent>
-              </Card>
+        {/* Overview Tab */}
+        {activeTab === "overview" && (
+          <div className="ios-space-sm">
+            <h2 className="ios-title mb-4">System Overview</h2>
+            
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="ios-card text-center">
+                <Users className="h-8 w-8 text-blue-500 mx-auto mb-3" />
+                <div className="ios-title text-xl">{mockAdminData.systemStats.totalUsers}</div>
+                <p className="ios-caption">Total Users</p>
+              </div>
+              <div className="ios-card text-center">
+                <Building className="h-8 w-8 text-green-500 mx-auto mb-3" />
+                <div className="ios-title text-xl">{mockAdminData.systemStats.totalProperties}</div>
+                <p className="ios-caption">Properties</p>
+              </div>
+              <div className="ios-card text-center">
+                <CreditCard className="h-8 w-8 text-purple-500 mx-auto mb-3" />
+                <div className="ios-title text-xl">{mockAdminData.systemStats.totalPayments.toLocaleString()}</div>
+                <p className="ios-caption">Payments</p>
+              </div>
+              <div className="ios-card text-center">
+                <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-3" />
+                <div className="ios-title text-xl">{mockAdminData.systemStats.activeIssues}</div>
+                <p className="ios-caption">Active Issues</p>
+              </div>
             </div>
 
-            {/* Recent Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Disputes</CardTitle>
-                  <CardDescription>Latest disputes requiring admin attention</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {mockAdminData.recentDisputes.map((dispute) => (
-                      <div key={dispute.id} className="border rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <Badge className={getStatusColor(dispute.status)}>{dispute.status}</Badge>
-                          <span className={`text-sm font-medium ${getPriorityColor(dispute.priority)}`}>
-                            {dispute.priority} priority
-                          </span>
-                        </div>
-                        <div className="text-sm">
-                          <div className="font-medium">{dispute.type}</div>
-                          <div className="text-gray-600">
-                            {dispute.tenant} vs {dispute.landlord}
-                          </div>
-                          <div className="text-gray-600 mt-1">{dispute.description}</div>
-                        </div>
-                      </div>
-                    ))}
+            {/* Recent Issues */}
+            <h3 className="ios-title mb-4">Recent Issues</h3>
+            <div className="ios-space-xs">
+              {mockAdminData.recentIssues.slice(0, 3).map((issue) => (
+                <div key={issue.id} className="ios-card">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex space-x-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(issue.status)}`}>
+                        {issue.status}
+                      </span>
+                      <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                        issue.category === 'maintenance' ? 'bg-blue-100 text-blue-800' :
+                        issue.category === 'complaint' ? 'bg-orange-100 text-orange-800' :
+                        'bg-purple-100 text-purple-800'
+                      }`}>
+                        {issue.category}
+                      </span>
+                    </div>
+                    <span className={`text-xs font-semibold ${getPriorityColor(issue.priority)} uppercase`}>
+                      {issue.priority}
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>System Activity</CardTitle>
-                  <CardDescription>Recent system events and admin actions</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {mockAdminData.systemLogs.map((log) => (
-                      <div key={log.id} className="border-l-2 border-blue-200 pl-3">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm">{log.action}</span>
-                          <Badge variant={log.type === "admin" ? "destructive" : "secondary"}>{log.type}</Badge>
-                        </div>
-                        <div className="text-sm text-gray-600">{log.details}</div>
-                        <div className="text-xs text-gray-500 mt-1">{log.timestamp}</div>
-                      </div>
-                    ))}
+                  <div className="ios-space-xs">
+                    <div className="ios-body font-semibold">{issue.type}</div>
+                    <div className="ios-caption">{issue.tenant} vs {issue.landlord}</div>
+                    <div className="ios-micro text-gray-600">{issue.description}</div>
+                    {issue.amount > 0 && (
+                      <div className="ios-micro font-medium text-green-600">KES {issue.amount.toLocaleString()}</div>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              ))}
             </div>
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="disputes" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Dispute Management</CardTitle>
-                <CardDescription>Review and resolve tenant-landlord disputes</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {mockAdminData.recentDisputes.map((dispute) => (
-                    <div key={dispute.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <span className="font-semibold">#{dispute.id}</span>
-                            <Badge className={getStatusColor(dispute.status)}>{dispute.status}</Badge>
-                            <span className={`text-sm ${getPriorityColor(dispute.priority)}`}>
-                              {dispute.priority} priority
-                            </span>
-                          </div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            Created: {new Date(dispute.createdAt).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedDispute(dispute)}
-                              className="bg-transparent"
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              Review
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>
-                                Dispute #{dispute.id} - {dispute.type}
-                              </DialogTitle>
-                              <DialogDescription>Review and resolve this dispute</DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label>Tenant</Label>
-                                  <div className="font-medium">{dispute.tenant}</div>
-                                </div>
-                                <div>
-                                  <Label>Landlord</Label>
-                                  <div className="font-medium">{dispute.landlord}</div>
-                                </div>
-                              </div>
-                              {dispute.amount > 0 && (
-                                <div>
-                                  <Label>Amount</Label>
-                                  <div className="font-medium">KES {dispute.amount.toLocaleString()}</div>
-                                </div>
-                              )}
-                              <div>
-                                <Label>Description</Label>
-                                <div className="text-sm bg-gray-50 p-3 rounded">{dispute.description}</div>
-                              </div>
-                              <div>
-                                <Label htmlFor="resolution">Resolution Notes</Label>
-                                <Textarea
-                                  id="resolution"
-                                  placeholder="Enter your resolution notes..."
-                                  value={disputeResolution}
-                                  onChange={(e) => setDisputeResolution(e.target.value)}
-                                />
-                              </div>
-                              <div className="flex space-x-2">
-                                <Button
-                                  onClick={() => handleResolveDispute(dispute.id, "approve")}
-                                  className="bg-green-600 hover:bg-green-700"
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-2" />
-                                  Approve
-                                </Button>
-                                <Button
-                                  onClick={() => handleResolveDispute(dispute.id, "reject")}
-                                  variant="destructive"
-                                >
-                                  <XCircle className="h-4 w-4 mr-2" />
-                                  Reject
-                                </Button>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
+        {/* Issues Tab */}
+        {activeTab === "issues" && (
+          <div className="ios-space-sm">
+            <h2 className="ios-title mb-4">Issue Management</h2>
+            
+            {/* Filter Tabs */}
+            <div className="ios-card mb-4">
+              <div className="flex space-x-1 overflow-x-auto pb-1">
+                {['all', 'dispute', 'maintenance', 'complaint'].map((filter) => (
+                  <button 
+                    key={filter}
+                    className="px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600"
+                  >
+                    {filter === 'all' ? 'All Issues' : filter.charAt(0).toUpperCase() + filter.slice(1) + 's'}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                      <div className="space-y-2">
-                        <div className="text-sm">
-                          <span className="font-medium">Type:</span> {dispute.type}
-                        </div>
-                        <div className="text-sm">
-                          <span className="font-medium">Parties:</span> {dispute.tenant} vs {dispute.landlord}
-                        </div>
-                        {dispute.amount > 0 && (
-                          <div className="text-sm">
-                            <span className="font-medium">Amount:</span> KES {dispute.amount.toLocaleString()}
-                          </div>
+            <div className="ios-space-xs">
+              {mockAdminData.recentIssues.map((issue) => (
+                <div key={issue.id} className="ios-card">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center space-x-2">
+                      <span className="ios-body font-bold">#{issue.id}</span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(issue.status)}`}>
+                        {issue.status}
+                      </span>
+                      <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                        issue.category === 'maintenance' ? 'bg-blue-100 text-blue-800' :
+                        issue.category === 'complaint' ? 'bg-orange-100 text-orange-800' :
+                        'bg-purple-100 text-purple-800'
+                      }`}>
+                        {issue.category}
+                      </span>
+                    </div>
+                    <button className="ios-button-secondary py-2 px-4">Review</button>
+                  </div>
+                  <div className="ios-space-xs">
+                    <div className="ios-body font-semibold">{issue.type}</div>
+                    <div className="ios-caption">{issue.tenant} → {issue.landlord}</div>
+                    <div className="ios-micro text-gray-600 mb-2">{issue.description}</div>
+                    {issue.amount > 0 && (
+                      <div className="ios-micro font-semibold text-green-600">Amount: KES {issue.amount.toLocaleString()}</div>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <div className="ios-micro text-gray-500">Created: {issue.createdAt}</div>
+                      <span className={`text-xs font-semibold ${getPriorityColor(issue.priority)} uppercase`}>
+                        {issue.priority}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {issue.status === "pending" && (
+                    <div className="flex space-x-2 mt-4">
+                      <button 
+                        onClick={() => handleResolveIssue(issue.id, "approve")}
+                        className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-xl text-sm font-medium"
+                      >
+                        <CheckCircle className="h-4 w-4 inline mr-1" />
+                        {issue.category === 'maintenance' ? 'Assign' : 'Approve'}
+                      </button>
+                      <button 
+                        onClick={() => handleResolveIssue(issue.id, "reject")}
+                        className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-xl text-sm font-medium"
+                      >
+                        <XCircle className="h-4 w-4 inline mr-1" />
+                        {issue.category === 'maintenance' ? 'Dismiss' : 'Reject'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === "users" && (
+          <div className="ios-space-sm">
+            <h2 className="ios-title mb-4">User Management</h2>
+            
+            <div className="ios-card mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border-0 rounded-xl text-gray-700 placeholder-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            
+            <div className="ios-space-xs">
+              {mockAdminData.recentUsers.map((user) => (
+                <div key={user.id} className="ios-card">
+                  <div className="flex justify-between items-start">
+                    <div className="ios-space-xs">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="ios-body font-semibold">{user.name}</span>
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                          {user.type}
+                        </span>
+                        {user.status === "active" && (
+                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                         )}
-                        <div className="text-sm">
-                          <span className="font-medium">Description:</span> {dispute.description}
-                        </div>
                       </div>
+                      <div className="ios-caption">📱 {user.phone}</div>
+                      {user.type === "tenant" && (
+                        <div className="ios-caption">⭐ Score: {user.score}</div>
+                      )}
+                      {user.type === "landlord" && user.properties && (
+                        <div className="ios-caption">🏠 Properties: {user.properties}</div>
+                      )}
+                      <div className="ios-micro text-gray-500">Joined: {user.joinDate}</div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="users" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>Manage tenants and landlords in the system</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex space-x-4 mb-6">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Search users by name or phone..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  <Button className="bg-green-600 hover:bg-green-700">
-                    <Search className="h-4 w-4 mr-2" />
-                    Search
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  {mockAdminData.recentUsers.map((user) => (
-                    <div key={user.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <span className="font-semibold">{user.name}</span>
-                            <Badge variant={user.type === "tenant" ? "default" : "secondary"}>{user.type}</Badge>
-                            <Badge
-                              variant={user.status === "active" ? "default" : "secondary"}
-                              className={user.status === "active" ? "bg-green-100 text-green-800" : ""}
-                            >
-                              {user.status.replace("_", " ")}
-                            </Badge>
-                          </div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            Phone: {user.phone} • Joined: {new Date(user.joinDate).toLocaleDateString()}
-                          </div>
-                          {user.type === "tenant" && (
-                            <div className="text-sm text-gray-600">TenantScore: {user.score}</div>
-                          )}
-                          {user.type === "landlord" && (
-                            <div className="text-sm text-gray-600">Properties: {user.properties}</div>
-                          )}
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" className="bg-transparent">
-                            View Details
-                          </Button>
-                          <Button variant="outline" size="sm" className="bg-transparent">
-                            Edit
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="system" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>System Monitoring</CardTitle>
-                <CardDescription>Monitor system health and performance</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">99.9%</div>
-                    <div className="text-sm text-gray-600">System Uptime</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{mockAdminData.systemStats.averageScore}</div>
-                    <div className="text-sm text-gray-600">Average TenantScore</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">2.3s</div>
-                    <div className="text-sm text-gray-600">Avg Response Time</div>
+                    <button className="ios-button-secondary py-2 px-4">
+                      <Edit className="h-4 w-4 mr-1 inline" />
+                      View
+                    </button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              ))}
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>System Logs</CardTitle>
-                <CardDescription>Recent system events and activities</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {mockAdminData.systemLogs.map((log) => (
-                    <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                      <div>
-                        <div className="font-medium text-sm">{log.action}</div>
-                        <div className="text-sm text-gray-600">{log.details}</div>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant={log.type === "admin" ? "destructive" : "secondary"}>{log.type}</Badge>
-                        <div className="text-xs text-gray-500 mt-1">{log.timestamp}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="tools" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Admin Tools</CardTitle>
-                <CardDescription>Administrative tools for system management</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {/* Score Adjustment Tool */}
-                  <div className="border rounded-lg p-4">
-                    <h3 className="font-semibold mb-4">Manual Score Adjustment</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Label htmlFor="userId">User ID or Phone</Label>
-                        <Input
-                          id="userId"
-                          placeholder="254XXXXXXXXX"
-                          value={scoreAdjustment.userId}
-                          onChange={(e) => setScoreAdjustment((prev) => ({ ...prev, userId: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="newScore">New Score (0-1000)</Label>
-                        <Input
-                          id="newScore"
-                          type="number"
-                          min="0"
-                          max="1000"
-                          placeholder="750"
-                          value={scoreAdjustment.newScore}
-                          onChange={(e) => setScoreAdjustment((prev) => ({ ...prev, newScore: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="reason">Reason</Label>
-                        <Select onValueChange={(value) => setScoreAdjustment((prev) => ({ ...prev, reason: value }))}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select reason" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="dispute_resolution">Dispute Resolution</SelectItem>
-                            <SelectItem value="data_correction">Data Correction</SelectItem>
-                            <SelectItem value="system_error">System Error Fix</SelectItem>
-                            <SelectItem value="manual_review">Manual Review</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <Button onClick={handleScoreAdjustment} className="mt-4 bg-red-600 hover:bg-red-700">
-                      <Edit className="h-4 w-4 mr-2" />
-                      Adjust Score
-                    </Button>
-                  </div>
-
-                  {/* System Actions */}
-                  <div className="border rounded-lg p-4">
-                    <h3 className="font-semibold mb-4">System Actions</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Button variant="outline" className="bg-transparent">
-                        <Activity className="h-4 w-4 mr-2" />
-                        Refresh Scores
-                      </Button>
-                      <Button variant="outline" className="bg-transparent">
-                        <Users className="h-4 w-4 mr-2" />
-                        Export Users
-                      </Button>
-                      <Button variant="outline" className="bg-transparent">
-                        <AlertTriangle className="h-4 w-4 mr-2" />
-                        System Health Check
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            {/* Score Adjustment Tool */}
+            <div className="ios-card mt-6">
+              <h3 className="ios-body font-semibold mb-4">Manual Score Adjustment</h3>
+              <div className="ios-space-xs">
+                <input
+                  type="text"
+                  placeholder="User ID"
+                  value={scoreAdjustment.userId}
+                  onChange={(e) => setScoreAdjustment({...scoreAdjustment, userId: e.target.value})}
+                  className="ios-input mb-3"
+                />
+                <input
+                  type="number"
+                  placeholder="New Score"
+                  value={scoreAdjustment.newScore}
+                  onChange={(e) => setScoreAdjustment({...scoreAdjustment, newScore: e.target.value})}
+                  className="ios-input mb-3"
+                />
+                <textarea
+                  placeholder="Reason for adjustment"
+                  value={scoreAdjustment.reason}
+                  onChange={(e) => setScoreAdjustment({...scoreAdjustment, reason: e.target.value})}
+                  className="ios-input mb-4"
+                  rows={3}
+                />
+                <button onClick={handleScoreAdjustment} className="ios-button">
+                  Update Score
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

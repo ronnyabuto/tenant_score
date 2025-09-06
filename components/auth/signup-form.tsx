@@ -60,44 +60,44 @@ export function SignupForm() {
   }
 
   return (
-    <div className="space-component">
-      <div className="text-center space-tight">
-        <h2 className="text-title">Create Account</h2>
-        <p className="text-caption">Join Tenant Score today</p>
+    <div className="ios-space-md">
+      <div className="text-center ios-space-xs">
+        <h2 className="ios-title">Create Account</h2>
+        <p className="ios-caption">Join Tenant Score today</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-element">
-        <div className="space-tight">
-          <label className="block text-caption font-medium">Full Name</label>
+      <form onSubmit={handleSubmit} className="ios-space-sm">
+        <div className="ios-space-xs">
+          <label className="block ios-caption font-medium">Full Name</label>
           <input
             type="text"
             placeholder="John Doe"
             value={formData.fullName}
             onChange={(e) => setFormData((prev) => ({ ...prev, fullName: e.target.value }))}
-            className="input-field"
+            className="ios-input"
             required
           />
         </div>
 
-        <div className="space-tight">
-          <label className="block text-caption font-medium">Phone Number</label>
+        <div className="ios-space-xs">
+          <label className="block ios-caption font-medium">Phone Number</label>
           <input
             type="tel"
             placeholder="254712345678"
             value={formData.phoneNumber}
             onChange={(e) => setFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))}
-            className="input-field"
+            className="ios-input"
             required
           />
-          <p className="text-micro">Your phone number will be used for verification</p>
+          <p className="ios-micro">Your phone number will be used for verification</p>
         </div>
 
-        <div className="space-tight">
-          <label className="block text-caption font-medium">Account Type</label>
+        <div className="ios-space-xs">
+          <label className="block ios-caption font-medium">Account Type</label>
           <select
             value={formData.userType}
             onChange={(e) => setFormData((prev) => ({ ...prev, userType: e.target.value as "tenant" | "landlord" | "admin" }))}
-            className="input-field"
+            className="ios-input"
             required
           >
             <option value="admin">Property Administrator</option>
@@ -109,7 +109,7 @@ export function SignupForm() {
         <button 
           type="submit" 
           disabled={isLoading}
-          className="btn-primary"
+          className="ios-button"
         >
           {isLoading ? "Creating Account..." : "Create Account"}
         </button>
