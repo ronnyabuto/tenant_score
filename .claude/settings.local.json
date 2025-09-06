@@ -4,7 +4,8 @@
       "Bash(move:*)",
       "Bash(node:*)",
       "Bash(del test-crypto.js)",
-      "Bash(Remove-Item \"C:\\Users\\tawin\\OneDrive\\Desktop\\Tenant_Score\\test-crypto.js\" -Force)"
+      "Bash(Remove-Item \"C:\\Users\\tawin\\OneDrive\\Desktop\\Tenant_Score\\test-crypto.js\" -Force)",
+      "Bash(del \"C:\\Users\\tawin\\OneDrive\\Desktop\\Tenant_Score\\pnpm-lock.yaml\")"
     ],
     "deny": [],
     "ask": []
