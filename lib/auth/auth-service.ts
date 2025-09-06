@@ -121,3 +121,15 @@ export class AuthService {
 }
 
 export const authService = new AuthService()
+
+export const authenticateUser = (nationalId: string, password: string) => 
+  authService.authenticateUser(nationalId, password)
+
+export const generateToken = (userId: string) => 
+  authService.generateToken(userId)
+
+export const verifyToken = (token: string) => 
+  authService.verifyToken(token)
+
+export const hashPassword = (password: string) => 
+  authService.hashPassword(password)

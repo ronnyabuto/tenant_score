@@ -73,3 +73,24 @@ export class UserService {
 }
 
 export const userService = new UserService()
+
+export const createUser = (userData: {
+  nationalId: string
+  encryptedId: string
+  fullName: string
+  phoneNumber: string
+  password: string
+  userType: "tenant" | "landlord" | "admin"
+  idDocument?: File
+}) => userService.createUser(userData)
+
+export const getAllUsers = () => userService.getAllUsers()
+
+export const updateUserStatus = (userId: string, status: string, reason: string, adminId: string) => 
+  userService.updateUserStatus(userId, status, reason, adminId)
+
+export const lookupTenant = (tenantScoreId?: string, phoneNumber?: string) => 
+  userService.lookupTenant(tenantScoreId, phoneNumber)
+
+export const getUserByTenantScoreId = (tenantScoreId: string) => 
+  userService.getUserByTenantScoreId(tenantScoreId)
