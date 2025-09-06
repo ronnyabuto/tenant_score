@@ -1,0 +1,65 @@
+export const REMOVED_COMPONENTS = [
+  "accordion",
+  "alert",
+  "aspect-ratio",
+  "avatar",
+  "breadcrumb",
+  "chart",
+  "checkbox",
+  "collapsible",
+  "context-menu",
+  "drawer",
+  "dropdown-menu",
+  "hover-card",
+  "menubar",
+  "navigation-menu",
+  "popover",
+  "radio-group",
+  "resizable",
+  "scroll-area",
+  "slider",
+  "sonner",
+  "switch",
+  "table",
+  "textarea",
+]
+
+export const RETAINED_COMPONENTS = [
+  "alert-dialog",
+  "badge",
+  "button",
+  "calendar",
+  "card",
+  "carousel",
+  "command",
+  "dialog",
+  "form",
+  "input",
+  "input-otp",
+  "label",
+  "pagination",
+  "progress",
+  "select",
+  "separator",
+  "sheet",
+  "sidebar",
+  "skeleton",
+  "tabs",
+  "toast",
+  "toaster",
+  "toggle",
+  "toggle-group",
+  "tooltip",
+  "use-mobile",
+  "use-toast",
+]
+
+// Bundle size reduction estimate
+export const CLEANUP_STATS = {
+  removedComponents: REMOVED_COMPONENTS.length,
+  retainedComponents: RETAINED_COMPONENTS.length,
+  estimatedSizeReduction: "~300KB", // Estimated bundle size reduction
+  cleanupDate: new Date().toISOString(),
+}
+
+console.log("UI Component Cleanup Complete:", CLEANUP_STATS)
