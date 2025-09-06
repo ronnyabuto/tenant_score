@@ -315,7 +315,6 @@ export async function getTenantScore(userId: string): Promise<{
     lastUpdated: new Date().toISOString(),
   }
 }
-*/
 
 // SIMPLIFIED VERSION FOR RENTAL MANAGEMENT SYSTEM
 export interface SimplePaymentRecord {
