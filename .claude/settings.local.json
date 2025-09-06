@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(move:*)"
+      "Bash(move:*)",
+      "Bash(node:*)",
+      "Bash(del test-crypto.js)",
+      "Bash(Remove-Item \"C:\\Users\\tawin\\OneDrive\\Desktop\\Tenant_Score\\test-crypto.js\" -Force)"
     ],
     "deny": [],
     "ask": []
